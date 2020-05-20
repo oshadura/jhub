@@ -116,6 +116,9 @@ spec:
             - mountPath: /etc/jupyterhub/cull_idle_servers.py
               subPath: cull_idle_servers.py
               name: config
+            - mountPath: /etc/jupyterhub/auth.py
+              subPath: auth.py
+              name: config
             - mountPath: /etc/jupyterhub/config/
               name: config
             - mountPath: /etc/jupyterhub/secret/
