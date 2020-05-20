@@ -263,6 +263,14 @@ def escape_username(input_name):
     return result
 
 def secret_creation_hook(spawner, pod):
+    # Add host IP to the pod envvars
+    pod.spec.containers[0].env.append( \
+        client.V1EnvVar("HOST_IP", None, \
+            client.V1EnvVarSource(None, client.V1ObjectFieldSelector(None, "status.hostIP")) \
+        ) \
+    )
+
+    # Generate secrets as necessary.
     api = client.CoreV1Api()
     euser = escape_username(spawner.user.name)
     label = "jhub_user=%s" % euser
