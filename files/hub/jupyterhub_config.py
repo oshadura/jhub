@@ -11,6 +11,7 @@ configuration_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, configuration_directory)
 
 from z2jh import get_config, set_config_if_not_none
+from auth import generate_x509
 
 # Configure JupyterHub to use the curl backend for making HTTP requests,
 # rather than the pure-python implementations. The default one starts
@@ -248,9 +249,9 @@ c.KubeSpawner.volumes.extend(get_config('singleuser.storage.extraVolumes', []))
 c.KubeSpawner.volume_mounts.extend(get_config('singleuser.storage.extraVolumeMounts', []))
 
 # Detect if there are tokens for this user - if so, add them as volume mounts.
-c.KubeSpawner.environment["BEARER_TOKEN_FILE"] = "/etc/xcache-secrets/bearer_token"
-c.KubeSpawner.volume_mounts.extend([{"name": "xcache-secret", "mountPath": "/etc/xcache-secrets"}])
-c.KubeSpawner.volumes.extend([{"name": "xcache-secret", "secret": {"secretName": "{username}-secret"}}])
+c.KubeSpawner.environment["BEARER_TOKEN_FILE"] = "/etc/cmsaf-secrets/bearer_token"
+c.KubeSpawner.volume_mounts.extend([{"name": "cmsaf-secrets", "mountPath": "/etc/cmsaf-secrets"}])
+c.KubeSpawner.volumes.extend([{"name": "cmsaf-secrets", "secret": {"secretName": "{username}-secrets"}}])
 
 # Just in time generation of the secrets as needed
 def escape_username(input_name):
@@ -279,12 +280,18 @@ def secret_creation_hook(spawner, pod):
         print("Secret already exists - not overwriting")
         return
 
+    ca_key_bytes, ca_cert_bytes, server_bytes, user_bytes = generate_x509()
+
     body = client.V1Secret()
     body.data = {}
     body.data["xcache_token"] = base64.b64encode("test1234".encode('ascii')).decode('ascii')
     body.data["condor_token"] = base64.b64encode("test1234".encode('ascii')).decode('ascii')
+    body.data["ca.key"] = base64.b64encode(ca_key_bytes).decode('ascii')
+    body.data["ca.pem"] = base64.b64encode(ca_cert_bytes).decode('ascii')
+    body.data["hostcert.pem"] = base64.b64encode(server_bytes).decode('ascii')
+    body.data["usercert.pem"] = base64.b64encode(user_bytes).decode('ascii')
     body.metadata = kubernetes.client.V1ObjectMeta()
-    body.metadata.name = '%s-token' % euser
+    body.metadata.name = '%s-secrets' % euser
     body.metadata.labels = {}
     body.metadata.labels['jhub_user'] = euser
     try:
