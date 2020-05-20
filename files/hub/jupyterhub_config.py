@@ -291,13 +291,13 @@ def secret_creation_hook(spawner, pod):
     body.data["ca.pem"] = base64.b64encode(ca_cert_bytes).decode('ascii')
     body.data["hostcert.pem"] = base64.b64encode(server_bytes).decode('ascii')
     body.data["usercert.pem"] = base64.b64encode(user_bytes).decode('ascii')
-    body.metadata = kubernetes.client.V1ObjectMeta()
+    body.metadata = client.V1ObjectMeta()
     body.metadata.name = '%s-secrets' % euser
     body.metadata.labels = {}
     body.metadata.labels['jhub_user'] = euser
     try:
         api.create_namespaced_secret(NAMESPACE, body)
-    except kubernetes.client.rest.ApiException as ae:
+    except client.rest.ApiException as ae:
         if ae.status == 409:
             print("Secret already exists - ignoring")
         else:
