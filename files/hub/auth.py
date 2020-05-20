@@ -148,7 +148,7 @@ def sign_csr(ca_cert, ca_key, csr):
     return certificate
 
 
-def generate_x509()
+def generate_x509():
     ca_cert, ca_key = generate_ca(common_name='Coffea farm development CA')
     ca_key_bytes = ca_key.private_bytes(
             encoding=serialization.Encoding.PEM,

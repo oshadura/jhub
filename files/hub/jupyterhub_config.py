@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import base64
 
 from tornado.httpclient import AsyncHTTPClient
 from kubernetes import client
@@ -278,7 +279,7 @@ def secret_creation_hook(spawner, pod):
     secrets = api.list_namespaced_secret(K8S_NAMESPACE, label_selector=label)
     if len(secrets.items):
         print("Secret already exists - not overwriting")
-        return
+        return pod
 
     ca_key_bytes, ca_cert_bytes, server_bytes, user_bytes = generate_x509()
 
