@@ -35,6 +35,7 @@ c.JupyterHub.tornado_settings = {
     'slow_spawn_timeout': 0,
 }
 
+K8S_NAMESPACE = "default"
 
 def camelCaseify(s):
     """convert snake_case to camelCase
@@ -245,6 +246,50 @@ elif storage_type == 'static':
 
 c.KubeSpawner.volumes.extend(get_config('singleuser.storage.extraVolumes', []))
 c.KubeSpawner.volume_mounts.extend(get_config('singleuser.storage.extraVolumeMounts', []))
+
+# Detect if there are tokens for this user - if so, add them as volume mounts.
+c.KubeSpawner.environment["BEARER_TOKEN_FILE"] = "/etc/xcache-secrets/bearer_token"
+c.KubeSpawner.volume_mounts.extend([{"name": "xcache-secret", "mountPath": "/etc/xcache-secrets"}])
+c.KubeSpawner.volumes.extend([{"name": "xcache-secret", "secret": {"secretName": "{username}-secret"}}])
+
+# Just in time generation of the secrets as needed
+def escape_username(input_name):
+    result = ''
+    for character in input_name:
+        if character.isalnum():
+            result += character
+        else:
+            result += '-%0x' % ord(character)
+    return result
+
+def secret_creation_hook(spawner, pod):
+    api = client.CoreV1Api()
+    euser = escape_username(spawner.user.name)
+    label = "jhub_user=%s" % euser
+    secrets = api.list_namespaced_secret(K8S_NAMESPACE, label_selector=label)
+    if len(secrets.items):
+        print("Secret already exists - not overwriting")
+        return
+
+    body = client.V1Secret()
+    body.data = {}
+    body.data["xcache_token"] = base64.b64encode("test1234".encode('ascii')).decode('ascii')
+    body.data["condor_token"] = base64.b64encode("test1234".encode('ascii')).decode('ascii')
+    body.metadata = kubernetes.client.V1ObjectMeta()
+    body.metadata.name = '%s-token' % euser
+    body.metadata.labels = {}
+    body.metadata.labels['jhub_user'] = euser
+    try:
+        api.create_namespaced_secret(NAMESPACE, body)
+    except kubernetes.client.rest.ApiException as ae:
+        if ae.status == 409:
+            print("Secret already exists - ignoring")
+        else:
+            raise
+    return pod
+
+c.KubeSpawner.modify_pod_hook = secret_creation_hook
+
 
 # Gives spawned containers access to the API of the hub
 c.JupyterHub.hub_connect_ip = os.environ['HUB_SERVICE_HOST']
