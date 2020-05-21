@@ -1,3 +1,7 @@
+import base64
+import uuid
+
+import jwt
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
@@ -5,6 +9,10 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID, ExtendedKeyUsageOID
 import datetime
 
+try:
+    import pymacaroons
+except ModuleNotFoundError:
+    pymacaroons = None
 
 COMMON_SUBJECT_ATTRIB = [
     x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'coffea'),
@@ -181,3 +189,61 @@ def generate_x509():
         )
 
     return ca_key_bytes, ca_cert_bytes, server_bytes, user_bytes
+
+def simple_scramble(in_buf):
+    """
+    Undo the simple scramble of HTCondor - simply
+    XOR with 0xdeadbeef
+    """
+    deadbeef = [0xde, 0xad, 0xbe, 0xef]
+    out_buf = b''
+    for idx in range(len(in_buf)):
+        scramble = in_buf[idx] ^ deadbeef[idx % 4]
+        out_buf += b'%c' % scramble
+    return out_buf
+
+def derive_master_key(password):
+    # Key length, salt, and info fixed as part of protocol
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=b"htcondor",
+        info=b"master jwt",
+        backend=default_backend())
+    return hkdf.derive(password)
+
+def sign_token(identity, issuer, kid, master_key):
+    payload = {'sub': identity,
+               'iat': int(time.time()),
+               'jti': uuid.uuid4().hex,
+               'iss': issuer
+              }
+    encoded = jwt.encode(payload, master_key, headers={'kid': kid}, algorithm='HS256')
+    return encoded
+
+def generate_condor(api, namespace, secret_name, issuer, name, kid):
+    secret = api.read_namespaced_secret(secret_name, namespace)
+    token_value = base64.b64decode(secret.data["token"])
+
+    password = simple_scramble(token_value)
+    if kid == "POOL":
+        password += password
+    master_key = derive_master_key(password)
+    return sign_token(name, issuer, kid, master_key).decode()
+
+def generate_xcache(api, namespace, secret_name, xcache_location, xcache_user_name):
+    secret = api.read_namespaced_secret(secret_name, namespace)
+    token_value = base64.b64decode(secret.data["token"])
+
+    if not pymacaroons:
+        return ""
+
+    m = pymacaroons.Macaroon(location=xcache_location, identifier = str(uuid.uuid4()), key=token_value)
+    m.add_first_party_caveat("name:%s" % xcache_user_name)
+    m.add_first_party_caveat("activity:DOWNLOAD")
+    m.add_first_party_caveat("path:/store")
+    dt = datetime.datetime.now()
+    datestring = (dt + datetime.timedelta(52*7, 0)).strftime("%FT%TZ")
+    m.add_first_party_caveat("before:%s" % datestring)
+    return m.serialize()
+
