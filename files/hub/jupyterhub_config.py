@@ -292,7 +292,7 @@ def secret_creation_hook(spawner, pod):
     ca_key_bytes, ca_cert_bytes, server_bytes, user_bytes = generate_x509()
 
     condor_token = generate_condor(api, K8S_NAMESPACE, condor_secret_name, issuer, condor_user, kid)
-    xcache_token = generate_xcache(api, K8S_NAMESPACE, xcache_secret_name, xcache_location, xcache_user_name)
+    xcache_token = generate_xcache(api, K8S_NAMESPACE, xcache_secret_name, xcache_location_name, xcache_user_name)
 
     body = client.V1Secret()
     body.data = {}
