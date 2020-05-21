@@ -12,7 +12,7 @@ configuration_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, configuration_directory)
 
 from z2jh import get_config, set_config_if_not_none
-from auth import generate_x509
+from auth import generate_x509, generate_condor, generate_xcache
 
 # Configure JupyterHub to use the curl backend for making HTTP requests,
 # rather than the pure-python implementations. The default one starts
@@ -37,7 +37,15 @@ c.JupyterHub.tornado_settings = {
     'slow_spawn_timeout': 0,
 }
 
+# Various secret management configurations
 K8S_NAMESPACE = "default"
+condor_secret_name = "condor-token"
+condor_user = 'cms-jovyan@unl.edu'
+issuer = 'red-condor.unl.edu'
+kid = 'POOL'
+xcache_secret_name = 'xcache-token'
+xcache_location_name = "T2_US_Nebraska"
+xcache_user_name = "cms-jovyan"
 
 def camelCaseify(s):
     """convert snake_case to camelCase
@@ -250,7 +258,7 @@ c.KubeSpawner.volumes.extend(get_config('singleuser.storage.extraVolumes', []))
 c.KubeSpawner.volume_mounts.extend(get_config('singleuser.storage.extraVolumeMounts', []))
 
 # Detect if there are tokens for this user - if so, add them as volume mounts.
-c.KubeSpawner.environment["BEARER_TOKEN_FILE"] = "/etc/cmsaf-secrets/bearer_token"
+c.KubeSpawner.environment["BEARER_TOKEN_FILE"] = "/etc/cmsaf-secrets/xcache_token"
 c.KubeSpawner.volume_mounts.extend([{"name": "cmsaf-secrets", "mountPath": "/etc/cmsaf-secrets"}])
 c.KubeSpawner.volumes.extend([{"name": "cmsaf-secrets", "secret": {"secretName": "{username}-secrets"}}])
 
@@ -283,10 +291,13 @@ def secret_creation_hook(spawner, pod):
 
     ca_key_bytes, ca_cert_bytes, server_bytes, user_bytes = generate_x509()
 
+    condor_token = generate_condor(api, K8S_NAMESPACE, condor_secret_name, issuer, condor_user, kid)
+    xcache_token = generate_xcache(api, K8S_NAMESPACE, xcache_secret_name, xcache_location, xcache_user_name)
+
     body = client.V1Secret()
     body.data = {}
-    body.data["xcache_token"] = base64.b64encode("test1234".encode('ascii')).decode('ascii')
-    body.data["condor_token"] = base64.b64encode("test1234".encode('ascii')).decode('ascii')
+    body.data["xcache_token"] = base64.b64encode(xcache_token.encode('ascii')).decode('ascii')
+    body.data["condor_token"] = base64.b64encode(condor_token.encode('ascii')).decode('ascii')
     body.data["ca.key"] = base64.b64encode(ca_key_bytes).decode('ascii')
     body.data["ca.pem"] = base64.b64encode(ca_cert_bytes).decode('ascii')
     body.data["hostcert.pem"] = base64.b64encode(server_bytes).decode('ascii')
@@ -296,7 +307,7 @@ def secret_creation_hook(spawner, pod):
     body.metadata.labels = {}
     body.metadata.labels['jhub_user'] = euser
     try:
-        api.create_namespaced_secret(NAMESPACE, body)
+        api.create_namespaced_secret(K8S_NAMESPACE, body)
     except client.rest.ApiException as ae:
         if ae.status == 409:
             print("Secret already exists - ignoring")
