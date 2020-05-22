@@ -126,6 +126,7 @@ for trait, cfg_key in (
     ('extra_labels', None),
     ('extra_annotations', None),
     ('uid', None),
+    ('gid', None),
     ('fs_gid', None),
     ('service_account', 'serviceAccountName'),
     ('storage_extra_labels', 'storage.extraLabels'),

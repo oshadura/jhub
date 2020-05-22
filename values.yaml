@@ -12,6 +12,7 @@ hub:
   publicURL:
   initContainers: []
   uid: 1000
+  gid: 1000
   fsGid: 1000
   nodeSelector: {}
   concurrentSpawnLimit: 64
@@ -209,8 +210,13 @@ auth:
 
 
 singleuser:
+  spec:
+    securityContext:
+      runAsUser: 1000
   extraTolerations: []
   nodeSelector: {}
+  uid: 1000
+  gid: 1000
   extraNodeAffinity:
     required: []
     preferred: []
