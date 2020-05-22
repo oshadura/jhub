@@ -297,7 +297,7 @@ def secret_creation_hook(spawner, pod):
     body = client.V1Secret()
     body.data = {}
     body.data["xcache_token"] = base64.b64encode(xcache_token.encode('ascii')).decode('ascii')
-    body.data["condor_token"] = base64.b64encode(condor_token.encode('ascii')).decode('ascii')
+    body.data["condor_token"] = base64.b64encode((condor_token + "\n").encode('ascii')).decode('ascii')
     body.data["ca.key"] = base64.b64encode(ca_key_bytes).decode('ascii')
     body.data["ca.pem"] = base64.b64encode(ca_cert_bytes).decode('ascii')
     body.data["hostcert.pem"] = base64.b64encode(server_bytes).decode('ascii')
