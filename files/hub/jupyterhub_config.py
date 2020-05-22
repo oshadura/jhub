@@ -301,7 +301,7 @@ def secret_creation_hook(spawner, pod):
             api.create_namespaced_service(K8S_NAMESPACE, body)
         except client.rest.ApiException as ae:
             if ae.status == 409:
-                continue
+                pass
             else:
                 raise
 
