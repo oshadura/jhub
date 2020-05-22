@@ -280,9 +280,32 @@ def secret_creation_hook(spawner, pod):
         ) \
     )
 
-    # Generate secrets as necessary.
     api = client.CoreV1Api()
     euser = escape_username(spawner.user.name)
+
+    # Create a service to serve the Dask scheduler to the outside world
+    label = "jhub_user=%s" % euser
+    services = api.list_namespaced_service(K8S_NAMESPACE, label_selector=label)
+    if not services.items:
+        body = client.V1Service()
+        body.metadata = client.V1ObjectMeta()
+        body.metadata.name = '%s-dask-service' % euser
+        body.metadata.labels = {}
+        body.metadata.labels['jhub_user'] = euser
+        body.spec = client.V1ServiceSpec()
+        body.spec.type = "NodePort"
+        body.spec.selector = {"jhub_user": euser}
+        port_listing = client.V1ServicePort(port = 8787, target_port = 8787)
+        body.spec.ports = [port_listing]
+        try:
+            api.create_namespaced_service(K8S_NAMESPACE, body)
+        except client.rest.ApiException as ae:
+            if ae.status == 409:
+                continue
+            else:
+                raise
+
+    # Generate secrets as necessary.
     label = "jhub_user=%s" % euser
     secrets = api.list_namespaced_secret(K8S_NAMESPACE, label_selector=label)
     if len(secrets.items):
