@@ -216,7 +216,7 @@ singleuser:
   extraTolerations: []
   nodeSelector: {}
   uid: 1000
-  gid: 1000
+  gid: 100
   extraNodeAffinity:
     required: []
     preferred: []
