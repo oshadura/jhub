@@ -249,7 +249,11 @@ singleuser:
     hub.jupyter.org/network-access-hub: 'true'
     jhub_user: '{username}'
   extraEnv: {}
-  lifecycleHooks: {}
+  lifecycleHooks:
+    postStart:
+      exec:
+        command: ['bash', '-c', 'mkdir -p /home/jovyan/.condor/tokens.d/ && cp -f /etc/cmsaf-secrets/condor_token /home/jovyan/.condor/tokens.d/condor_token']
+
   initContainers: []
   extraContainers: []
   uid: 1000
