@@ -6,7 +6,7 @@ hub:
     annotations: {}
     ports:
       nodePort: 
-    loadBalancerIP: red-kube-api.unl.edu
+    loadBalancerIP: 
   baseUrl: /
   cookieSecret:
   publicURL:
