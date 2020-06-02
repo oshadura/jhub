@@ -275,6 +275,7 @@ singleuser:
       volumeNameTemplate: volume-{username}{servername}
       storageAccessModes: [ReadWriteOnce]
   image:
+    name: []        
     # pullSecrets:
     #   - secretName
   imagePullSecret:
