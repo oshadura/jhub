@@ -48,8 +48,8 @@ hub:
   extraVolumes: []
   extraVolumeMounts: []
   image:
-    name: [] 
-    tag: []
+    name: carljetter/k8s-hub 
+    tag: '0.1.0'
     # pullSecrets:
     #   - secretName
   resources:
