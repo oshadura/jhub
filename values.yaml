@@ -48,8 +48,8 @@ hub:
   extraVolumes: []
   extraVolumeMounts: []
   image:
-    name: carljetter/k8s-hub
-    tag: '0.1.0'
+    name: [] 
+    tag: []
     # pullSecrets:
     #   - secretName
   resources:
@@ -275,10 +275,6 @@ singleuser:
       volumeNameTemplate: volume-{username}{servername}
       storageAccessModes: [ReadWriteOnce]
   image:
-          ##    name: jupyterhub/k8s-singleuser-sample
-    name: carljetter/coffea-dask
-    tag: '0.1.7'
-    pullPolicy: IfNotPresent
     # pullSecrets:
     #   - secretName
   imagePullSecret:
@@ -352,7 +348,7 @@ prePuller:
   continuous:
     enabled: true
   extraImages: {}
-  pause:
+  use:
     image:
       name: gcr.io/google_containers/pause
       tag: '3.1'
