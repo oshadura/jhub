@@ -48,8 +48,8 @@ hub:
   extraVolumes: []
   extraVolumeMounts: []
   image:
-    name: carljetter/k8s-hub 
-    tag: 0.1.0
+    name: [] 
+    tag: []
     # pullSecrets:
     #   - secretName
   resources:
@@ -275,7 +275,8 @@ singleuser:
       volumeNameTemplate: volume-{username}{servername}
       storageAccessModes: [ReadWriteOnce]
   image:
-    name: []        
+    name: carljetter/coffea-dask
+    tag: '0.1.7'    
     # pullSecrets:
     #   - secretName
   imagePullSecret:
