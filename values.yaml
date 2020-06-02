@@ -350,7 +350,7 @@ prePuller:
   continuous:
     enabled: true
   extraImages: {}
-  use:
+  pause:
     image:
       name: gcr.io/google_containers/pause
       tag: '3.1'
