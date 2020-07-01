@@ -277,12 +277,6 @@ def escape_username(input_name):
     return result
 
 def secret_creation_hook(spawner, pod):
-    # Add host IP to the pod envvars
-    pod.spec.containers[0].env.append( \
-        client.V1EnvVar("HOST_IP", None, \
-            client.V1EnvVarSource(None, client.V1ObjectFieldSelector(None, "status.hostIP")) \
-        ) \
-    )
 
     api = client.CoreV1Api()
     euser = escape_username(spawner.user.name)
@@ -297,7 +291,8 @@ def secret_creation_hook(spawner, pod):
         body.metadata.labels = {}
         body.metadata.labels['jhub_user'] = euser
         body.spec = client.V1ServiceSpec()
-        body.spec.type = "NodePort"
+#        body.spec.type = "NodePort"
+        body.spec.type = "LoadBalancer"
         body.spec.selector = {"jhub_user": euser}
         port_listing = client.V1ServicePort(port = 8787, target_port = 8787)
         body.spec.ports = [port_listing]
@@ -308,6 +303,25 @@ def secret_creation_hook(spawner, pod):
                 pass
             else:
                 raise
+    
+# Try to wait for a few seconds
+    external_ip = None
+    for count in range(50):
+        services = api.list_namespaced_service(K8S_NAMESPACE, label_selector=label)
+        body = services.items[0]
+        try:
+            external_ip = str(body.status.load_balancer.ingress[0].ip)
+        except (IndexError, AttributeError):
+            time.sleep(.2)
+            continue
+        break
+    if not external_ip:
+        raise Exception("Container failed to receive an IP from Kubernetes")
+
+    # Add host IP to the pod envvars
+    pod.spec.containers[0].env.append( \
+        client.V1EnvVar("HOST_IP", external_ip)
+    )
 
     # Generate secrets as necessary.
     label = "jhub_user=%s" % euser
