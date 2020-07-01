@@ -311,7 +311,7 @@ def secret_creation_hook(spawner, pod):
         body = services.items[0]
         try:
             external_ip = str(body.status.load_balancer.ingress[0].ip)
-        except (IndexError, AttributeError):
+        except (TypeError, IndexError, AttributeError):
             time.sleep(.2)
             continue
         break
