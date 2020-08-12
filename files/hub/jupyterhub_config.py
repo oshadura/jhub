@@ -291,10 +291,8 @@ def secret_creation_hook(spawner, pod):
         body.metadata.labels = {}
         body.metadata.labels['jhub_user'] = euser
         body.spec = client.V1ServiceSpec()
-#        body.spec.type = "NodePort"
-        body.spec.type = "LoadBalancer"
         body.spec.selector = {"jhub_user": euser}
-        port_listing = client.V1ServicePort(port = 8787, target_port = 8787)
+        port_listing = client.V1ServicePort(port = 8786, target_port = 8786)
         body.spec.ports = [port_listing]
         try:
             api.create_namespaced_service(K8S_NAMESPACE, body)
@@ -303,24 +301,48 @@ def secret_creation_hook(spawner, pod):
                 pass
             else:
                 raise
-    
-# Try to wait for a few seconds
-    external_ip = None
-    for count in range(50):
-        services = api.list_namespaced_service(K8S_NAMESPACE, label_selector=label)
-        body = services.items[0]
-        try:
-            external_ip = str(body.status.load_balancer.ingress[0].ip)
-        except (TypeError, IndexError, AttributeError):
-            time.sleep(.2)
-            continue
-        break
-    if not external_ip:
-        raise Exception("Container failed to receive an IP from Kubernetes")
+
+    # Add hostname to Traefik for this service
+    my_hostname = "%s.dask.coffea.casa" % euser
+    result = api.list_namespaced_service("traefik")
+    existing_hostnames = result.items[0].metadata.annotations["external-dns.alpha.kubernetes.io/hostname"].split(",")
+    found_my_hostname = False
+    for hostname in existing_hostnames:
+        if hostname == my_hostname:
+            found_my_hostname = True
+            break
+    if not found_my_hostname:
+        desired_hostname = list(existing_hostnames)
+        desired_hostnames.append(my_hostname)
+        api.patch_namespaced_service("traefik", "traefik",
+            body={"metadata": {"annotations":
+                     {"external-dns.alpha.kubernetes.io/hostname": ",".join(desired_hostnames)}}})
+
+    # Now, we want to query for the IngressRequestTCP and add a new TLS route
+    # to find the Dask instance
+    api_crd = client.CustomObjectsApi()
+
+    result = api.list_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps")
+    if len(result['items']) != 1:
+        raise Exception("Expecting exactly one IngressRouteTCP object")
+
+    found_my_route = False
+    my_match = "hostSNI(`%s.dask.coffea.casa`)" % euser
+    for route in result['items'][0]['spec']['routes']:
+        if route['match'] == my_match:
+            found_my_route = True
+            break
+    if not found_my_route:
+        # Deep magic: we manually override the content-type header so we can append to the list.
+        api_crd.api_client.default_headers['Content-Type'] = 'application/json-patch+json'
+        result = api.patch_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps", "ingressroutetcpfoo",
+            [{"op": "add", "path":"/spec/routes/-",
+             "value": {"match": "hostSNI(`%s.dask.coffea.casa`)" % euser, "services": [{"name": "%s-dask-service" % euser, "port": 8786}]}}])
+        del api_crd.api_client.default_headers['Content-Type']
 
     # Add host IP to the pod envvars
     pod.spec.containers[0].env.append( \
-        client.V1EnvVar("HOST_IP", external_ip)
+        client.V1EnvVar("HOST_IP", my_hostname)
     )
 
     # Generate secrets as necessary.
