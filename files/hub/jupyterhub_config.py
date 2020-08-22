@@ -312,7 +312,7 @@ def secret_creation_hook(spawner, pod):
             found_my_hostname = True
             break
     if not found_my_hostname:
-        desired_hostname = list(existing_hostnames)
+        desired_hostnames = list(existing_hostnames)
         desired_hostnames.append(my_hostname)
         api.patch_namespaced_service("traefik", "traefik",
             body={"metadata": {"annotations":
