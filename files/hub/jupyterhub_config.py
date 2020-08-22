@@ -322,7 +322,7 @@ def secret_creation_hook(spawner, pod):
     # to find the Dask instance
     api_crd = client.CustomObjectsApi()
 
-    result = api.list_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps")
+    result = api_crd.list_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps")
     if len(result['items']) != 1:
         raise Exception("Expecting exactly one IngressRouteTCP object")
 
