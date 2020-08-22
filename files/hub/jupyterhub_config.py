@@ -327,7 +327,7 @@ def secret_creation_hook(spawner, pod):
         raise Exception("Expecting exactly one IngressRouteTCP object")
 
     found_my_route = False
-    my_match = "hostSNI(`%s.dask.coffea.casa`)" % euser
+    my_match = "HostSNI(`%s.dask.coffea.casa`)" % euser
     for route in result['items'][0]['spec']['routes']:
         if route['match'] == my_match:
             found_my_route = True
@@ -337,7 +337,7 @@ def secret_creation_hook(spawner, pod):
         api_crd.api_client.default_headers['Content-Type'] = 'application/json-patch+json'
         result = api_crd.patch_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps", "ingressroutetcpfoo",
             [{"op": "add", "path":"/spec/routes/-",
-             "value": {"match": "hostSNI(`%s.dask.coffea.casa`)" % euser, "services": [{"name": "%s-dask-service" % euser, "port": 8786}]}}])
+             "value": {"match": "HostSNI(`%s.dask.coffea.casa`)" % euser, "services": [{"name": "%s-dask-service" % euser, "port": 8786}]}}])
         del api_crd.api_client.default_headers['Content-Type']
 
     # Add host IP to the pod envvars
