@@ -335,7 +335,7 @@ def secret_creation_hook(spawner, pod):
     if not found_my_route:
         # Deep magic: we manually override the content-type header so we can append to the list.
         api_crd.api_client.default_headers['Content-Type'] = 'application/json-patch+json'
-        result = api.patch_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps", "ingressroutetcpfoo",
+        result = api_crd.patch_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps", "ingressroutetcpfoo",
             [{"op": "add", "path":"/spec/routes/-",
              "value": {"match": "hostSNI(`%s.dask.coffea.casa`)" % euser, "services": [{"name": "%s-dask-service" % euser, "port": 8786}]}}])
         del api_crd.api_client.default_headers['Content-Type']
