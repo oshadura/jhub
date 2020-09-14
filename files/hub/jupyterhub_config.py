@@ -276,6 +276,7 @@ def escape_username(input_name):
             result += '-%0x' % ord(character)
     return result
 
+
 def secret_creation_hook(spawner, pod):
 
     api = client.CoreV1Api()
@@ -292,8 +293,9 @@ def secret_creation_hook(spawner, pod):
         body.metadata.labels['jhub_user'] = euser
         body.spec = client.V1ServiceSpec()
         body.spec.selector = {"jhub_user": euser}
-        port_listing = client.V1ServicePort(port = 8786, target_port = 8786)
-        body.spec.ports = [port_listing]
+        port_listing = client.V1ServicePort(port = 8786, target_port = 8786, name = "dask-scheduler")
+        worker_port_listing = client.V1ServicePort(port = 8788, target_port = 8788, name = "dask-worker")
+        body.spec.ports = [port_listing, worker_port_listing]
         try:
             api.create_namespaced_service(K8S_NAMESPACE, body)
         except client.rest.ApiException as ae:
@@ -304,16 +306,25 @@ def secret_creation_hook(spawner, pod):
 
     # Add hostname to Traefik for this service
     my_hostname = "%s.dask.coffea.casa" % euser
+    my_worker_hostname = "%s.dask-worker.coffea.casa" % euser
     result = api.list_namespaced_service("traefik")
     existing_hostnames = result.items[0].metadata.annotations["external-dns.alpha.kubernetes.io/hostname"].split(",")
     found_my_hostname = False
+    found_my_worker_hostname = False
     for hostname in existing_hostnames:
         if hostname == my_hostname:
             found_my_hostname = True
+        elif hostname == my_worker_hostname:
+            found_my_worker_hostname = True
+        if found_my_hostname and found_my_worker_hostname:
             break
+    hostnames_to_add = []
     if not found_my_hostname:
-        desired_hostnames = list(existing_hostnames)
-        desired_hostnames.append(my_hostname)
+        hostnames_to_add.append(my_hostname)
+    if not found_my_worker_hostname:
+        hostnames_to_add.append(my_worker_hostname)
+    if hostnames_to_add:
+        desired_hostnames = list(existing_hostnames) + hostnames_to_add
         api.patch_namespaced_service("traefik", "traefik",
             body={"metadata": {"annotations":
                      {"external-dns.alpha.kubernetes.io/hostname": ",".join(desired_hostnames)}}})
@@ -327,22 +338,36 @@ def secret_creation_hook(spawner, pod):
         raise Exception("Expecting exactly one IngressRouteTCP object")
 
     found_my_route = False
+    found_my_worker_route = False
     my_match = "HostSNI(`%s.dask.coffea.casa`)" % euser
+    my_worker_match = "HostSNI(`%s.dask-worker.coffea.casa`)" % euser
     for route in result['items'][0]['spec']['routes']:
         if route['match'] == my_match:
             found_my_route = True
+        elif route['match'] == my_worker_match:
+            found_my_worker_route = True
+        if found_my_route and found_my_worker_route:
             break
+    patches_to_add = []
     if not found_my_route:
+        patches_to_add.append({"op": "add", "path":"/spec/routes/-",
+            "value": {"match": my_match, "services": [{"name": "%s-dask-service" % euser, "port": 8786}]}})
+    if not found_my_worker_route:
+        patches_to_add.append({"op": "add", "path":"/spec/routes/-",
+            "value": {"match": my_worker_match, "services": [{"name": "%s-dask-service" % euser, "port": 8788}]}})
+    if patches_to_add:
         # Deep magic: we manually override the content-type header so we can append to the list.
         api_crd.api_client.default_headers['Content-Type'] = 'application/json-patch+json'
         result = api_crd.patch_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps", "ingressroutetcpfoo",
-            [{"op": "add", "path":"/spec/routes/-",
-             "value": {"match": "HostSNI(`%s.dask.coffea.casa`)" % euser, "services": [{"name": "%s-dask-service" % euser, "port": 8786}]}}])
+            patches_to_add);
         del api_crd.api_client.default_headers['Content-Type']
 
     # Add host IP to the pod envvars
     pod.spec.containers[0].env.append( \
         client.V1EnvVar("HOST_IP", my_hostname)
+    )
+    pod.spec.containers[0].env.append( \
+        client.V1EnvVar("WORKER_IP", my_worker_hostname)
     )
 
     # Generate secrets as necessary.
