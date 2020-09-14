@@ -293,8 +293,8 @@ def secret_creation_hook(spawner, pod):
         body.metadata.labels['jhub_user'] = euser
         body.spec = client.V1ServiceSpec()
         body.spec.selector = {"jhub_user": euser}
-        port_listing = client.V1ServicePort(port = 8786, target_port = 8786)
-        worker_port_listing = client.V1ServicePort(port = 8788, target_port = 8788)
+        port_listing = client.V1ServicePort(port = 8786, target_port = 8786, name = "dask-scheduler")
+        worker_port_listing = client.V1ServicePort(port = 8788, target_port = 8788, name = "dask-worker")
         body.spec.ports = [port_listing, worker_port_listing]
         try:
             api.create_namespaced_service(K8S_NAMESPACE, body)
