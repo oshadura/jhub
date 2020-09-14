@@ -258,10 +258,10 @@ singleuser:
   extraContainers:
     - name: dask-worker
     image: coffeateam/coffea-casa-sidecar:latest
-    #resources:
-    #  limits:
-    #    memory: xGi
-    #    cpu: 1
+    resources:
+      limits:
+        memory: 6Gi
+        cpu: 4
     env:
       - name: BEARER_TOKEN_FILE
       value: "/etc/cmsaf-secrets/xcache_token"
