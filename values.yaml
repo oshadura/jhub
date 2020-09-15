@@ -5,8 +5,8 @@ hub:
     type: ClusterIP
     annotations: {}
     ports:
-      nodePort: 
-    loadBalancerIP: 
+      nodePort:
+    loadBalancerIP:
   baseUrl: /
   cookieSecret:
   publicURL:
@@ -44,11 +44,53 @@ hub:
   extraConfig: {}
   extraConfigMap: {}
   extraEnv: {}
-  extraContainers: []
+  extraContainers:
+    name: dask-worker
+    image: coffeateam/coffea-casa-sidecar:latest
+    resources:
+      limits:
+        memory: 6Gi
+        cpu: 4
+    env:
+      - name: BEARER_TOKEN_FILE
+        value: "/etc/cmsaf-secrets/xcache_token"
+      - name: XCACHE_HOST
+        value: "red-xcache1.unl.edu"
+      - name: XRD_PLUGINCONFDIR
+        value: "/opt/conda/etc/xrootd/client.plugins.d/"
+      - name: LD_LIBRARY_PATH
+        value: "/opt/conda/lib/"
+      - name: XRD_PLUGIN
+        value: "/opt/conda/lib/libXrdClAuthzPlugin.so"
+    volumeMounts:
+      - name: home
+        mountPath: /home/jovyan/
+      - name: secrets
+        mountPath: /etc/cmsaf-secrets
+        readOnly: true
+      - name: condor
+        mountPath: /var/lib/condor
+        readOnly: true
+    command: ["/bin/bash", "-c"]
+    args:
+      - dask-worker
+      - --tls-ca-file
+      - /etc/cmsaf-secrets/ca.pem
+      - --tls-cert
+      - /etc/cmsaf-secrets/hostcert.pem
+      - --tls-key
+      - /etc/cmsaf-secrets/hostcert.pem
+      - --listen-address
+      - tls://0.0.0.0:8788
+      - --name
+      - kubernetes-worker
+      - --contact-address
+      - tls://$HOST_IP:8786
+      - tls://localhost:8786
   extraVolumes: []
   extraVolumeMounts: []
   image:
-    name: carljetter/k8s-hub 
+    name: carljetter/k8s-hub
     tag: '0.1.0'
     # pullSecrets:
     #   - secretName
@@ -90,12 +132,13 @@ hub:
     periodSeconds: 10
   # existingSecret: existing-secret
 
+
 rbac:
   enabled: true
 
 
 proxy:
-  secretToken: ''      
+  secretToken: ''
   deploymentStrategy:
     ## type: Recreate
     ## - JupyterHub's interaction with the CHP proxy becomes a lot more robust
@@ -276,7 +319,7 @@ singleuser:
       storageAccessModes: [ReadWriteOnce]
   image:
     name: carljetter/coffea-dask
-    tag: '0.1.7'    
+    tag: '0.1.7'
     # pullSecrets:
     #   - secretName
   imagePullSecret:
