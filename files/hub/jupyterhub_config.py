@@ -64,7 +64,7 @@ elif db_type == "sqlite-memory":
     c.JupyterHub.db_url = "sqlite://"
 else:
     set_config_if_not_none(c.JupyterHub, "db_url", "hub.db.url")
-    
+
 
 for trait, cfg_key in (
     # Max number of servers that can be spawning at any one time
@@ -265,6 +265,8 @@ c.KubeSpawner.environment["XRD_PLUGINCONFDIR"] = "/opt/conda/etc/xrootd/client.p
 c.KubeSpawner.environment["LD_LIBRARY_PATH"] = "/opt/conda/lib/"
 c.KubeSpawner.volume_mounts.extend([{"name": "cmsaf-secrets", "mountPath": "/etc/cmsaf-secrets"}])
 c.KubeSpawner.volumes.extend([{"name": "cmsaf-secrets", "secret": {"secretName": "{username}-secrets"}}])
+c.KubeSpawner.volume_mounts.extend([{"name": "condor", "mountPath": "/var/lib/condor"}])
+c.KubeSpawner.volumes.extend([{"name": "condor", "secret": {"secretName": "{username}-condor"}}])
 
 # Just in time generation of the secrets as needed
 def escape_username(input_name):

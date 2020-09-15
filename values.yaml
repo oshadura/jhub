@@ -45,7 +45,7 @@ hub:
   extraConfigMap: {}
   extraEnv: {}
   extraContainers:
-    name: dask-worker
+  - name: dask-worker
     image: coffeateam/coffea-casa-sidecar:latest
     resources:
       limits:
@@ -65,7 +65,7 @@ hub:
     volumeMounts:
       - name: home
         mountPath: /home/jovyan/
-      - name: secrets
+      - name: cmsaf-secrets
         mountPath: /etc/cmsaf-secrets
         readOnly: true
       - name: condor
