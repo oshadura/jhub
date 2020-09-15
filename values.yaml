@@ -68,9 +68,6 @@ hub:
       - name: cmsaf-secrets
         mountPath: /etc/cmsaf-secrets
         readOnly: true
-      - name: condor
-        mountPath: /var/lib/condor
-        readOnly: true
     command: ["/bin/bash", "-c"]
     args:
       - dask-worker
