@@ -46,17 +46,19 @@ hub:
   extraEnv: {}
   extraContainers:
   - name: dask-worker
-    image: coffeateam/coffea-casa-analysis:0.2.5
+    image: coffeateam/coffea-casa-analysis:0.2.25
     resources:
       limits:
         memory: 6Gi
         cpu: 4
     env:
       - name: COFFEA_CASA_SIDECAR
-        value: "true"
-    command: ["/bin/bash", "-c"]
+        value: 'true'
     args:
+      - /bin/bash
+      - -c
       - dask-worker
+      - tls://localhost:8786
       - --tls-ca-file
       - /etc/cmsaf-secrets/ca.pem
       - --tls-cert
@@ -69,7 +71,6 @@ hub:
       - kubernetes-worker
       - --contact-address
       - tls://$HOST_IP:8786
-      - tls://localhost:8786
   extraVolumes: []
   extraVolumeMounts: []
   image:
