@@ -46,28 +46,14 @@ hub:
   extraEnv: {}
   extraContainers:
   - name: dask-worker
-    image: coffeateam/coffea-casa-sidecar:latest
+    image: coffeateam/coffea-casa-analysis:0.2.5
     resources:
       limits:
         memory: 6Gi
         cpu: 4
     env:
-      - name: BEARER_TOKEN_FILE
-        value: "/etc/cmsaf-secrets/xcache_token"
-      - name: XCACHE_HOST
-        value: "red-xcache1.unl.edu"
-      - name: XRD_PLUGINCONFDIR
-        value: "/opt/conda/etc/xrootd/client.plugins.d/"
-      - name: LD_LIBRARY_PATH
-        value: "/opt/conda/lib/"
-      - name: XRD_PLUGIN
-        value: "/opt/conda/lib/libXrdClAuthzPlugin.so"
-    volumeMounts:
-      - name: home
-        mountPath: /home/jovyan/
-      - name: cmsaf-secrets
-        mountPath: /etc/cmsaf-secrets
-        readOnly: true
+      - name: COFFEA_CASA_SIDECAR
+        value: "true"
     command: ["/bin/bash", "-c"]
     args:
       - dask-worker
