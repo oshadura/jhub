@@ -53,26 +53,18 @@ hub:
         cpu: 4
     env:
       - name: COFFEA_CASA_SIDECAR
-        value: 'true'
-    args:
-      - /bin/bash
-      - -c
-      - dask-worker
-      - tls://localhost:8786
-      - --tls-ca-file
-      - /etc/cmsaf-secrets/ca.pem
-      - --tls-cert
-      - /etc/cmsaf-secrets/hostcert.pem
-      - --tls-key
-      - /etc/cmsaf-secrets/hostcert.pem
-      - --listen-address
-      - tls://0.0.0.0:8788
-      - --name
-      - kubernetes-worker
-      - --contact-address
-      - tls://$HOST_IP:8786
-  extraVolumes: []
-  extraVolumeMounts: []
+        value: 'True'
+    command: ["/bin/bash", "-c", "dask-worker tls://localhost:8786 --tls-ca-file /etc/cmsaf-secrets/ca.pem --tls-cert /etc/cmsaf-secrets/hostcert.pem --tls-key /etc/cmsaf-secrets/hostcert.pem --listen-address tls://0.0.0.0:8788 --name kubernetes-worker --contact-address tls://$HOST_IP:8786"]
+    volumeMounts:
+    - name: cmsaf-secrets
+      mountPath: /etc/cmsaf-secrets
+  extraVolumes:
+  - name: cmsaf-secrets
+    emptyDir: {}
+  extraVolumeMounts:
+  - name: cmsaf-secrets
+    mountPath: /etc/cmsaf-secrets
+    readOnly: true
   image:
     name: carljetter/k8s-hub
     tag: '0.1.0'
