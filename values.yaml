@@ -46,7 +46,7 @@ hub:
   extraEnv: {}
   extraContainers:
   - name: dask-worker
-    image: coffeateam/coffea-casa-analysis:0.2.25
+    image: coffeateam/coffea-casa-analysis:0.2.26
     resources:
       limits:
         memory: 6Gi
