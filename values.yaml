@@ -44,7 +44,32 @@ hub:
   extraConfig: {}
   extraConfigMap: {}
   extraEnv: {}
-  extraContainers: []
+  extraContainers:
+  - name: dask-worker
+    image: coffeateam/coffea-casa-analysis:0.2.5
+    resources:
+      limits:
+        memory: 6Gi
+        cpu: 4
+    env:
+      - name: COFFEA_CASA_SIDECAR
+        value: "true"
+    command: ["/bin/bash", "-c"]
+    args:
+      - dask-worker
+      - --tls-ca-file
+      - /etc/cmsaf-secrets/ca.pem
+      - --tls-cert
+      - /etc/cmsaf-secrets/hostcert.pem
+      - --tls-key
+      - /etc/cmsaf-secrets/hostcert.pem
+      - --listen-address
+      - tls://0.0.0.0:8788
+      - --name
+      - kubernetes-worker
+      - --contact-address
+      - tls://$HOST_IP:8786
+      - tls://localhost:8786
   extraVolumes: []
   extraVolumeMounts: []
   image:
@@ -89,6 +114,7 @@ hub:
     initialDelaySeconds: 0
     periodSeconds: 10
   # existingSecret: existing-secret
+
 
 rbac:
   enabled: true
@@ -255,52 +281,7 @@ singleuser:
         command: ['bash', '-c', 'mkdir -p /home/jovyan/.condor/tokens.d/ && cp -f /etc/cmsaf-secrets/condor_token /home/jovyan/.condor/tokens.d/condor_token']
 
   initContainers: []
-  extraContainers:
-    - name: dask-worker
-    image: coffeateam/coffea-casa-sidecar:latest
-    resources:
-      limits:
-        memory: 6Gi
-        cpu: 4
-    env:
-      - name: BEARER_TOKEN_FILE
-      value: "/etc/cmsaf-secrets/xcache_token"
-      - name: XCACHE_HOST
-      value: "red-xcache1.unl.edu"
-      - name: XRD_PLUGINCONFDIR
-      value: "/opt/conda/etc/xrootd/client.plugins.d/"
-      - name: LD_LIBRARY_PATH
-      value: "/opt/conda/lib/"
-      - name: XRD_PLUGIN
-      value: "/opt/conda/lib/libXrdClAuthzPlugin.so"
-      volumeMounts:
-      - name: home
-      mountPath: /home/jovyan/
-      #subPath: home
-      - name: secrets
-      mountPath: /etc/cmsaf-secrets
-      #subPath:
-      readOnly: true
-      - name: condor
-      mountPath: /var/lib/condor
-      #subPath:
-      readOnly: true
-    command: ["/bin/bash", "-c"]
-    args:
-      - dask-worker
-      - --tls-ca-file
-      - /etc/cmsaf-secrets/ca.pem
-      - --tls-cert
-      - /etc/cmsaf-secrets/hostcert.pem
-      - --tls-key
-      - /etc/cmsaf-secrets/hostcert.pem
-      - --listen-address
-      - tls://0.0.0.0:8788
-      - --name
-      - kubernetes-worker
-      - --contact-address
-      - tls://$HOST_IP:8786
-      - tls://localhost:8786
+  extraContainers: []
   uid: 1000
   fsGid: 100
   serviceAccountName:
