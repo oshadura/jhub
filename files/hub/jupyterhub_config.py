@@ -64,7 +64,7 @@ elif db_type == "sqlite-memory":
     c.JupyterHub.db_url = "sqlite://"
 else:
     set_config_if_not_none(c.JupyterHub, "db_url", "hub.db.url")
-    
+
 
 for trait, cfg_key in (
     # Max number of servers that can be spawning at any one time
@@ -274,12 +274,14 @@ def escape_username(input_name):
     return result
 
 def secret_creation_hook(spawner, pod):
-    # Add host IP to the pod envvars
-    pod.spec.containers[0].env.append( \
-        client.V1EnvVar("HOST_IP", None, \
-            client.V1EnvVarSource(None, client.V1ObjectFieldSelector(None, "status.hostIP")) \
-        ) \
-    )
+    # Add host IP to the pod envvars (to scheduler and sidecar)
+    for container in range(len(pod.spec.containers)):
+        pod.spec.containers[container].env.append( \
+            client.V1EnvVar("HOST_IP", my_hostname)
+        )
+        pod.spec.containers[container].env.append( \
+            client.V1EnvVar("WORKER_IP", my_worker_hostname)
+        )
 
     api = client.CoreV1Api()
     euser = escape_username(spawner.user.name)
