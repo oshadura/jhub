@@ -362,13 +362,14 @@ def secret_creation_hook(spawner, pod):
             patches_to_add);
         del api_crd.api_client.default_headers['Content-Type']
 
-    # Add host IP to the pod envvars
-    pod.spec.containers[0].env.append( \
-        client.V1EnvVar("HOST_IP", my_hostname)
-    )
-    pod.spec.containers[0].env.append( \
-        client.V1EnvVar("WORKER_IP", my_worker_hostname)
-    )
+    # Add host IP to the pod envvars (to scheduler and sidecar)
+    for container in range(len(pod.spec.containers)):
+        pod.spec.containers[container].env.append( \
+            client.V1EnvVar("HOST_IP", my_hostname)
+        )
+        pod.spec.containers[container].env.append( \
+            client.V1EnvVar("WORKER_IP", my_worker_hostname)
+        )
 
     # Generate secrets as necessary.
     label = "jhub_user=%s" % euser
