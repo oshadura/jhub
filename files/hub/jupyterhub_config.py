@@ -38,7 +38,8 @@ c.JupyterHub.tornado_settings = {
 }
 
 # Various secret management configurations
-K8S_NAMESPACE = "default"
+c.KubeSpawner.namespace = os.environ.get('POD_NAMESPACE', 'default')
+K8S_NAMESPACE = os.environ.get('POD_NAMESPACE', 'default')
 condor_secret_name = "condor-token"
 condor_user = 'cms-jovyan@unl.edu'
 issuer = 'red-condor.unl.edu'
@@ -308,26 +309,24 @@ def secret_creation_hook(spawner, pod):
     my_hostname = "%s.dask.coffea.casa" % euser
     my_worker_hostname = "%s.dask-worker.coffea.casa" % euser
     result = api.list_namespaced_service("traefik")
-    existing_hostnames = result.items[0].metadata.annotations["external-dns.alpha.kubernetes.io/hostname"].split(",")
-    found_my_hostname = False
-    found_my_worker_hostname = False
-    for hostname in existing_hostnames:
-        if hostname == my_hostname:
-            found_my_hostname = True
-        elif hostname == my_worker_hostname:
-            found_my_worker_hostname = True
-        if found_my_hostname and found_my_worker_hostname:
-            break
-    hostnames_to_add = []
-    if not found_my_hostname:
-        hostnames_to_add.append(my_hostname)
-    if not found_my_worker_hostname:
-        hostnames_to_add.append(my_worker_hostname)
-    if hostnames_to_add:
-        desired_hostnames = list(existing_hostnames) + hostnames_to_add
-        api.patch_namespaced_service("traefik", "traefik",
-            body={"metadata": {"annotations":
-                     {"external-dns.alpha.kubernetes.io/hostname": ",".join(desired_hostnames)}}})
+
+    try:
+        hostnames = result.items[0].metadata.annotations['external-dns.alpha.kubernetes.io/hostname'].split(',')
+    except KeyError:
+        hostnames = list()
+
+    host_update = False
+    if my_hostname not in hostnames:
+        hostnames.append(my_hostname)
+        host_update = True
+    if my_worker_hostname not in hostnames:
+        hostnames.append(my_worker_hostname)
+        host_update = True
+
+    if host_update:
+        api.patch_namespaced_service('traefik', 'traefik',
+            body={'metadata': {'annotations':
+                     {'external-dns.alpha.kubernetes.io/hostname': ','.join(hostnames)}}})
 
     # Now, we want to query for the IngressRequestTCP and add a new TLS route
     # to find the Dask instance
