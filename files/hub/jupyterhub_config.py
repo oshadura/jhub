@@ -332,7 +332,7 @@ def secret_creation_hook(spawner, pod):
     # to find the Dask instance
     api_crd = client.CustomObjectsApi()
 
-    result = api_crd.list_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps")
+    result = api_crd.list_namespaced_custom_object("traefik.containo.us", "v1alpha1", K8S_NAMESPACE, "ingressroutetcps")
     if len(result['items']) != 1:
         raise Exception("Expecting exactly one IngressRouteTCP object")
 
@@ -340,7 +340,11 @@ def secret_creation_hook(spawner, pod):
     found_my_worker_route = False
     my_match = "HostSNI(`%s.dask.coffea.casa`)" % euser
     my_worker_match = "HostSNI(`%s.dask-worker.coffea.casa`)" % euser
-    for route in result['items'][0]['spec']['routes']:
+    try:
+        routes = result['items'][0]['spec']['routes']
+    except KeyError:
+        routes = list()
+    for route in routes:
         if route['match'] == my_match:
             found_my_route = True
         elif route['match'] == my_worker_match:
@@ -357,7 +361,7 @@ def secret_creation_hook(spawner, pod):
     if patches_to_add:
         # Deep magic: we manually override the content-type header so we can append to the list.
         api_crd.api_client.default_headers['Content-Type'] = 'application/json-patch+json'
-        result = api_crd.patch_namespaced_custom_object("traefik.containo.us", "v1alpha1", "default", "ingressroutetcps", "ingressroutetcpfoo",
+        result = api_crd.patch_namespaced_custom_object("traefik.containo.us", "v1alpha1", K8S_NAMESPACE, "ingressroutetcps", "ingressroutetcpfoo",
             patches_to_add);
         del api_crd.api_client.default_headers['Content-Type']
 
