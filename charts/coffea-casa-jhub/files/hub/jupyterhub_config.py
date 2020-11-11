@@ -261,7 +261,7 @@ c.KubeSpawner.volume_mounts.extend(get_config('singleuser.storage.extraVolumeMou
 
 # Detect if there are tokens for this user - if so, add them as volume mounts.
 c.KubeSpawner.environment["BEARER_TOKEN_FILE"] = "/etc/cmsaf-secrets/xcache_token"
-c.KubeSpawner.environment["XCACHE_HOST"] = "red-xcache1.unl.edu"
+#c.KubeSpawner.environment["XCACHE_HOST"] = "red-xcache1.unl.edu"
 c.KubeSpawner.environment["XRD_PLUGINCONFDIR"] = "/opt/conda/etc/xrootd/client.plugins.d/"
 c.KubeSpawner.environment["LD_LIBRARY_PATH"] = "/opt/conda/lib/"
 c.KubeSpawner.volume_mounts.extend([{"name": "cmsaf-secrets", "mountPath": "/etc/cmsaf-secrets"}])
