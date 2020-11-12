@@ -1,4 +1,7 @@
 lint-docs:
+  
+  on: pull_request
+
   runs-on: ubuntu-latest
   needs: lint-chart
   steps:

@@ -1,4 +1,7 @@
 kubeval-chart:
+  
+  on: pull_request
+
   runs-on: ubuntu-latest
   needs:
     - lint-chart
