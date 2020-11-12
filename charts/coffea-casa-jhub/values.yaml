@@ -278,7 +278,7 @@ singleuser:
     securityContext:
       runAsUser: 1000
       runAsGroup: 100
-      runAsNonRoot: True
+      runAsNonRoot: true
     resources:
       limits:
         memory: 6Gi
