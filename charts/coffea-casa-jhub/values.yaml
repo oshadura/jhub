@@ -1,5 +1,12 @@
+# Default values for coffea-casa-jhub.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
 custom: {}
 
+###################################
+# Coffea-Casa - JHub Configs
+###################################
 hub:
   service:
     type: ClusterIP
@@ -88,11 +95,15 @@ hub:
     periodSeconds: 10
   # existingSecret: existing-secret
 
-
+###################################
+# Coffea-Casa - RBAC Configs
+###################################
 rbac:
   enabled: true
 
-
+###################################
+# Coffea-Casa - Proxy Configs
+###################################
 proxy:
   secretToken: ''
   deploymentStrategy:
@@ -188,7 +199,9 @@ proxy:
           - ipBlock:
               cidr: 0.0.0.0/0
 
-
+###################################
+# Coffea-Casa - Auth Configs
+###################################
 auth:
   type: dummy
   whitelist:
@@ -208,6 +221,9 @@ auth:
     cryptoKey:
 
 
+###################################
+# Coffea-Casa - Singleuser Configs
+###################################
 singleuser:
   spec:
     securityContext:
