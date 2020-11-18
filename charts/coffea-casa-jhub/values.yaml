@@ -1,5 +1,12 @@
+# Default values for coffea-casa-jhub.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
 custom: {}
 
+###################################
+# Coffea-Casa - JHub Configs
+###################################
 hub:
   service:
     type: ClusterIP
@@ -88,11 +95,15 @@ hub:
     periodSeconds: 10
   # existingSecret: existing-secret
 
-
+###################################
+# Coffea-Casa - RBAC Configs
+###################################
 rbac:
   enabled: true
 
-
+###################################
+# Coffea-Casa - Proxy Configs
+###################################
 proxy:
   secretToken: ''
   deploymentStrategy:
@@ -151,7 +162,7 @@ proxy:
       name: traefik
       tag: v2.1
     hsts:
-      maxAge: 15724800 # About 6 months
+      maxAge: 15724800  # About 6 months
       includeSubdomains: false
     resources: {}
   secretSync:
@@ -167,7 +178,7 @@ proxy:
   https:
     enabled: true
     type: letsencrypt
-    #type: letsencrypt, manual, offload, secret
+    # type: letsencrypt, manual, offload, secret
     letsencrypt:
       contactEmail: ''
       # Specify custom server here (https://acme-staging-v02.api.letsencrypt.org/directory) to hit staging LE
@@ -188,7 +199,9 @@ proxy:
           - ipBlock:
               cidr: 0.0.0.0/0
 
-
+###################################
+# Coffea-Casa - Auth Configs
+###################################
 auth:
   type: dummy
   whitelist:
@@ -208,6 +221,9 @@ auth:
     cryptoKey:
 
 
+###################################
+# Coffea-Casa - Singleuser Configs
+###################################
 singleuser:
   spec:
     securityContext:
@@ -262,7 +278,7 @@ singleuser:
     securityContext:
       runAsUser: 1000
       runAsGroup: 100
-      runAsNonRoot: True
+      runAsNonRoot: true
     resources:
       limits:
         memory: 6Gi
@@ -279,7 +295,6 @@ singleuser:
       - name: BEARER_TOKEN_FILE
         value: '/etc/cmsaf-secrets/xcache_token'
     command: ["/bin/bash", "-c", "cd /home/jovyan; dask-worker tls://$HOST_IP:8786 --tls-ca-file /etc/cmsaf-secrets/ca.pem --tls-cert /etc/cmsaf-secrets/hostcert.pem --tls-key /etc/cmsaf-secrets/hostcert.pem --listen-address tls://0.0.0.0:8788 --name kubernetes-worker --contact-address tls://$WORKER_IP:8788"]
-  uid: 1000
   fsGid: 100
   serviceAccountName:
   storage:
