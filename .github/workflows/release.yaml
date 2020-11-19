@@ -1,4 +1,3 @@
-# https://github.com/helm/chart-releaser-action
 name: Release Charts
 
 on:
