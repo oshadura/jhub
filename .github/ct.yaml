@@ -1,8 +1,0 @@
-# See https://github.com/helm/chart-testing#configuration
-helm-extra-args: --timeout=500s
-check-version-increment: true
-debug: true
-chart-dirs:
-  - charts
-chart-repos:
-  - coffea-casa-jhub=https://coffeateam.github.io/jhub/

@@ -1,12 +1,5 @@
-# Default values for coffea-casa-jhub.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 custom: {}
 
-###################################
-# Coffea-Casa - JHub Configs
-###################################
 hub:
   service:
     type: ClusterIP
@@ -95,15 +88,11 @@ hub:
     periodSeconds: 10
   # existingSecret: existing-secret
 
-###################################
-# Coffea-Casa - RBAC Configs
-###################################
+
 rbac:
   enabled: true
 
-###################################
-# Coffea-Casa - Proxy Configs
-###################################
+
 proxy:
   secretToken: ''
   deploymentStrategy:
@@ -162,7 +151,7 @@ proxy:
       name: traefik
       tag: v2.1
     hsts:
-      maxAge: 15724800  # About 6 months
+      maxAge: 15724800 # About 6 months
       includeSubdomains: false
     resources: {}
   secretSync:
@@ -178,7 +167,7 @@ proxy:
   https:
     enabled: true
     type: letsencrypt
-    # type: letsencrypt, manual, offload, secret
+    #type: letsencrypt, manual, offload, secret
     letsencrypt:
       contactEmail: ''
       # Specify custom server here (https://acme-staging-v02.api.letsencrypt.org/directory) to hit staging LE
@@ -199,9 +188,7 @@ proxy:
           - ipBlock:
               cidr: 0.0.0.0/0
 
-###################################
-# Coffea-Casa - Auth Configs
-###################################
+
 auth:
   type: dummy
   whitelist:
@@ -221,9 +208,6 @@ auth:
     cryptoKey:
 
 
-###################################
-# Coffea-Casa - Singleuser Configs
-###################################
 singleuser:
   spec:
     securityContext:
@@ -278,7 +262,7 @@ singleuser:
     securityContext:
       runAsUser: 1000
       runAsGroup: 100
-      runAsNonRoot: true
+      runAsNonRoot: True
     resources:
       limits:
         memory: 6Gi
@@ -295,6 +279,7 @@ singleuser:
       - name: BEARER_TOKEN_FILE
         value: '/etc/cmsaf-secrets/xcache_token'
     command: ["/bin/bash", "-c", "cd /home/jovyan; supervisord -c /etc/supervisord/supervisord.conf"]
+
   uid: 1000
   fsGid: 100
   serviceAccountName:
