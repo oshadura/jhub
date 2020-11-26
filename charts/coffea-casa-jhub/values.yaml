@@ -258,7 +258,7 @@ singleuser:
     volumeMounts:
     - mountPath: /etc/cmsaf-secrets
       name: cmsaf-secrets
-    image: coffeateam/coffea-casa-analysis:0.2.32
+    image: coffeateam/coffea-casa-analysis:0.2.37
     securityContext:
       runAsUser: 1000
       runAsGroup: 100
