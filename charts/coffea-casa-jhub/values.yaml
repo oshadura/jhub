@@ -278,7 +278,7 @@ singleuser:
         value: '/opt/conda/lib/libXrdClAuthzPlugin.so'
       - name: BEARER_TOKEN_FILE
         value: '/etc/cmsaf-secrets/xcache_token'
-    command: ["/bin/bash", "-c", "cd /home/jovyan; supervisord -c /etc/supervisord/supervisord.conf"]
+    command: ["/bin/bash", "-c", "cd /home/jovyan; supervisord --nodaemon -c /etc/supervisor/supervisord.conf"]
 
   uid: 1000
   fsGid: 100
