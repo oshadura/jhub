@@ -12,7 +12,7 @@ configuration_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, configuration_directory)
 
 from z2jh import get_config, set_config_if_not_none
-from auth import generate_x509, generate_condor, generate_xcache
+from auth import generate_x509, generate_condor, generate_xcache, generate_servicex
 
 # Configure JupyterHub to use the curl backend for making HTTP requests,
 # rather than the pure-python implementations. The default one starts
@@ -44,9 +44,15 @@ condor_secret_name = "condor-token"
 condor_user = 'cms-jovyan@unl.edu'
 issuer = 'red-condor.unl.edu'
 kid = 'POOL'
+
 xcache_secret_name = 'xcache-token'
 xcache_location_name = "T2_US_Nebraska"
 xcache_user_name = "cms-jovyan"
+
+servicex_secret_name = 'servicex-token'
+servicex_user = 'cms-jovyan@unl.edu'
+servicex_issuer = 'cmsaf-jh.unl.edu'
+servicex_user_name = "cms-jovyan"
 
 def camelCaseify(s):
     """convert snake_case to camelCase
@@ -385,11 +391,13 @@ def secret_creation_hook(spawner, pod):
 
     condor_token = generate_condor(api, K8S_NAMESPACE, condor_secret_name, issuer, condor_user, kid)
     xcache_token = generate_xcache(api, K8S_NAMESPACE, xcache_secret_name, xcache_location_name, xcache_user_name)
+    servicex_token = generate_servicex(api, K8S_NAMESPACE, servicex_secret_name, servicex_issuer, servicex_user)
 
     body = client.V1Secret()
     body.data = {}
     body.data["xcache_token"] = base64.b64encode(xcache_token.encode('ascii')).decode('ascii')
     body.data["condor_token"] = base64.b64encode((condor_token + "\n").encode('ascii')).decode('ascii')
+    body.data["servicex_token"] = base64.b64encode(servicex_token.encode('ascii')).decode('ascii')
     body.data["ca.key"] = base64.b64encode(ca_key_bytes).decode('ascii')
     body.data["ca.pem"] = base64.b64encode(ca_cert_bytes).decode('ascii')
     body.data["hostcert.pem"] = base64.b64encode(server_bytes).decode('ascii')

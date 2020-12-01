@@ -250,3 +250,9 @@ def generate_xcache(api, namespace, secret_name, xcache_location, xcache_user_na
     m.add_first_party_caveat("before:%s" % datestring)
     return m.serialize()
 
+def generate_servicex(api, namespace, secret_name, issuer, name, kid=None):
+    secret = api.read_namespaced_secret(secret_name, namespace)
+    token_value = base64.b64decode(secret.data["token"])
+    password = simple_scramble(token_value)
+    master_key = derive_master_key(password)
+    return sign_token(name, issuer, kid, master_key).decode()
