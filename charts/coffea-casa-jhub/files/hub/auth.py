@@ -2,6 +2,7 @@ import base64
 import time
 import datetime
 import uuid
+import yaml
 
 import jwt
 from cryptography import x509
@@ -215,6 +216,16 @@ def derive_master_key(password):
         backend=default_backend())
     return hkdf.derive(password)
 
+def derive_servicex_master_key(password):
+    # Key length, salt, and info fixed as part of protocol
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=b"servicex",
+        info=b"master jwt",
+        backend=default_backend())
+    return hkdf.derive(password)
+
 def sign_token(identity, issuer, kid, master_key):
     payload = {'sub': identity,
                'iat': int(time.time()),
@@ -222,6 +233,15 @@ def sign_token(identity, issuer, kid, master_key):
                'iss': issuer
               }
     encoded = jwt.encode(payload, master_key, headers={'kid': kid}, algorithm='HS256')
+    return encoded
+
+def sign_servicex_token(identity, issuer, master_key):
+    payload = {'sub': identity,
+               'iat': int(time.time()),
+               'jti': uuid.uuid4().hex,
+               'iss': issuer
+              }
+    encoded = jwt.encode(payload, master_key, algorithm='HS256')
     return encoded
 
 def generate_condor(api, namespace, secret_name, issuer, name, kid):
@@ -250,9 +270,17 @@ def generate_xcache(api, namespace, secret_name, xcache_location, xcache_user_na
     m.add_first_party_caveat("before:%s" % datestring)
     return m.serialize()
 
-def generate_servicex(api, namespace, secret_name, issuer, name, kid=None):
+def generate_servicex(api, namespace, secret_name, issuer, name):
+    """Generates ServiceX file.
+    .servicex file:
+    `api_endpoints:
+      - endpoint: https://xaod.servicex.ssl-hep.org/
+        token: token obtained from ServiceX
+        type: xaod`
+    """
     secret = api.read_namespaced_secret(secret_name, namespace)
     token_value = base64.b64decode(secret.data["token"])
+    # let's try the same way it is done for HTCondor
     password = simple_scramble(token_value)
-    master_key = derive_master_key(password)
-    return sign_token(name, issuer, kid, master_key).decode()
+    master_servicex_key = derive_servicex_master_key(password)
+    return sign_servicex_token(name, issuer, master_servicex_key).decode()
