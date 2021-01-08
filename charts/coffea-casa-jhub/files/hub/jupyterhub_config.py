@@ -54,9 +54,6 @@ servicex_secret_name = 'servicex-token'
 servicex_user = 'cms-jovyan@unl.edu'
 servicex_issuer = 'cmsaf-jh.unl.edu'
 servicex_user_name = "cms-jovyan"
-# FIXME: move it to config
-servicex_endpoint = "https://uproot.servicex.coffea.casa"
-servicex_backend = "uproot"
 
 def camelCaseify(s):
     """convert snake_case to camelCase
